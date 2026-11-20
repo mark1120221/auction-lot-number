@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Auction Photo Organizer</title>
+<style>
+:root{--bg:#f4f3ef;--sf:#fff;--tx:#1d1d1b;--mu:#6b6a65;--bd:#dcdad2;--ac:#2f5d8a;--wn:#b36b00;--wnb:#fff4e0;--dr:#e8f0f8;--er:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181a;--sf:#222426;--tx:#ececea;--mu:#9d9c97;--bd:#3a3c3f;--ac:#7fb0e0;--wn:#f0b050;--wnb:#3a2e18;--dr:#243444;--er:#ff8a80}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,"PingFang SC",sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--sf);border-bottom:1px solid var(--bd);padding:10px 14px}
+h1{font-size:17px;margin:0 0 8px}.bar{display:flex;flex-wrap:wrap;gap:8px}
+button,.btn,select,input{font:inherit;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);min-height:40px}
+.btn{display:inline-flex;align-items:center}input[type=number],input[type=text]{width:84px;-webkit-user-select:text;user-select:text}
+button.p,.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}button:disabled{opacity:.45}
+#st{font-size:13px;color:var(--mu);margin-top:8px;min-height:18px}
+main{padding:12px 14px 90px;max-width:1100px;margin:0 auto}
+details{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px}
+summary{font-weight:600;font-size:14px}details ul{margin:6px 0 0;padding-left:18px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+pre{white-space:pre-wrap;font-size:12px;margin:8px 0 0;max-height:220px;overflow:auto;-webkit-user-select:text;user-select:text}.er{color:var(--er)}
+.card{background:var(--sf);border:1.5px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden}.card.dt{outline:3px solid var(--ac)}.card.unc{border-color:var(--wn)}
+.head{display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:wrap}
+.grip{font-size:22px;padding:4px 10px;touch-action:none;color:var(--mu)}
+.num{font-weight:700;font-size:16px}.fin{font-weight:700;color:var(--ac)}.iid{font-size:11px;color:var(--mu);font-family:ui-monospace,monospace}
+.sp{flex:1}.head button,.head input{padding:4px 8px;min-height:34px;font-size:13px}.head input{width:70px}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:8px 10px 12px;min-height:110px}.strip.wrap{flex-wrap:wrap;max-height:42vh;overflow-y:auto}.strip.dt{background:var(--dr)}
+.photo{position:relative;flex:0 0 auto;width:116px;height:87px;border-radius:8px;overflow:hidden;border:2px solid transparent;background:var(--bd)}
+.photo img{width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.photo.dt{border-color:var(--ac)}.photo.src{opacity:.35}.photo.sel{border-color:var(--wn);box-shadow:0 0 0 2px var(--wn)}
+.photo b{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;padding:1px 6px;border-radius:5px}
+.photo i{position:absolute;right:4px;top:4px;background:var(--er);color:#fff;font-size:11px;padding:0 5px;border-radius:5px;font-style:normal}
+#nz{border:2px dashed var(--bd);border-radius:14px;padding:18px;text-align:center;color:var(--mu);margin-bottom:12px}#nz.dt{border-color:var(--ac);background:var(--dr)}
+#gh{position:fixed;z-index:50;pointer-events:none;opacity:.9;box-shadow:0 8px 24px rgba(0,0,0,.35);border-radius:8px;overflow:hidden;transform:translate(-50%,-60%)}
+#gh.item{background:var(--sf);padding:10px 16px;border:2px solid var(--ac);font-weight:700}
+</style></head><body>
+<header><h1>Auction Photo Organizer <span class="iid">Phase 2 · 云端 AI 分组</span></h1>
+<div class="bar">
+<label class="btn p">导入照片<input id="fi" type="file" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif" multiple hidden></label>
+<button id="bCan" disabled>取消导入</button><button id="bUndo">撤销</button><button id="bSave">保存</button><button id="bBak">备份元数据</button>
+<button id="bZip" class="p">导出 ZIP</button><button id="bCsv">导出对照 CSV</button><button id="bAI" class="p">AI 分组</button></div>
+<div id="st"></div></header>
+<main>
+<details><summary>功能状态（如实说明）</summary><ul>
+<li><b>新增：AI 分组（云端，需你同意；未实测，准确度未知）。</b>只分析“未分组”照片，结果是建议；可信度为高/中/低的定性标记，不是概率。</li><li><b>Phase 1 已实现（尚未在 iPad 实测）：</b>真实照片导入（分批、去重、缩略图）、手动分组/拖动/点选多选、内部 ID、AUTO/MANUAL/MIXED 编号、CSV 编号导入与检查、从 -2 起编号、按拍品分文件夹的 ZIP（原始字节，不重新编码）、对照 CSV、导出前检查、自动保存。</li>
+<li><b>未实现：</b>AI 角度识别与官方规则排序建议、EXIF 拍摄时间（目前用文件修改时间）、XLSX 导入、备份文件恢复、Lot 详情页/放大查看、重做、锁定排序、列表虚拟化、ZIP 流式写入、1000 张实机性能测试。</li>
+<li><b>限制：</b>Safari 存储配额可能放不下全部原图；放不下时会提示，刷新后需重新导入对应原图才能导出。HEIC 缩略图取决于 Safari 解码，失败会显示灰块（原图仍可导出）。</li></ul></details>
+<details open id="aiD"><summary>AI 分组（云端）</summary><div class="iid" style="margin-top:6px">点“同意并开始”后，<b>未分组照片的低分辨率缩略图</b>（约 240 像素的 JPEG，不是原图，也不含文件名）会通过本页的 Claude 调用能力发送给 <b>Anthropic 的 Claude 模型</b>分析；平台首次调用时还会弹出它自己的授权提示。已有拍品不会被改动。AI 只提出分组建议：可信度“中/低”的拍品会标橙色“待确认”，确认前不能导出。缩略图较小，细小的纹饰差别可能看不清，请重点复查。</div><div class="row"><button id="aiGo" class="p">同意并开始分析未分组照片</button><button id="aiStop" disabled>停止</button></div><pre id="aiLog"></pre></details>
+<details open><summary>导入与分组</summary><div class="row">排序方式（对本次所选文件）
+<select id="so"><option value="sel">选择顺序</option><option value="name">文件名</option><option value="mod">修改时间</option></select>
+手动分组： <button id="bSel">用选中照片新建拍品</button> <button id="bClr">清除选择</button></div>
+<div class="iid" style="margin-top:6px">点照片＝选中/取消；长按约 0.25 秒后拖动（已选中的会一起移动）。</div></details>
+<details><summary>编号管理</summary><div class="row">模式 <select id="md"><option>AUTO</option><option>MANUAL</option><option>MIXED</option></select>
+图片序号从 <select id="fs"><option value="1">-1（如 1-1）</option><option value="2">-2（如 1-2，-1 留给首图）</option></select> 起始 <input id="ns" type="number" min="1"> 增量 <input id="ni" type="number" min="1">
+<label class="btn">导入 CSV<input id="ci" type="file" accept=".csv,text/csv" hidden></label><button id="bAp" disabled>确认应用</button></div>
+<div class="iid" style="margin-top:6px">AUTO＝按排列顺序自动编号（忽略锁定值但保留）；MANUAL＝只用手动编号；MIXED＝手动锁定的优先，其余自动并跳过已占用号码。图片序号可在上方选择：从 -1 开始（1-1、1-2…）或从 -2 开始（-1 留给首图）。CSV 列：internal_id,final_lot</div><pre id="cp"></pre><div class="row"><div style="width:100%" class="iid">有拍卖行目录 PDF（含“Lot number”列）？<label class="btn" style="margin-left:6px">从 PDF 读取编号<input id="pdfi" type="file" accept="application/pdf,.pdf" hidden></label> 只读取该列的数字，填入下面的框并自动预览；不会上传 PDF。PDF 按顺序对应拍品，请务必核对第一张图。</div><textarea id="po" rows="3" style="width:100%;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);-webkit-user-select:text;user-select:text" placeholder="粘贴按顺序排列的最终 Lot 编号（每行一个，或用逗号/空格分隔）"></textarea><button id="bPo">预览按顺序排号</button><button id="bPoAp" disabled>确认应用</button></div><pre id="pp"></pre></details>
+<details><summary>导出检查</summary><pre id="chk">点击“导出 ZIP”时自动检查。</pre></details>
+<div id="list"></div><div id="nz">拖到这里＝拆分为新拍品</div>
+</main><div id="gh" hidden></div>
+<script>
+const $=s=>document.querySelector(s);
+let P={},L=[{id:'POOL',ph:[]}],S=new Set(),undo=[],drag=null,jd=false,cancel=false,pend=null,clrArm=false,clrT=0;
+let C={mode:'AUTO',start:1,inc:1,next:1,ord:0};
+const st=m=>{$('#st').textContent=m},pad=(n,l=2)=>String(n).padStart(l,'0');
+const lots=()=>L.slice(1),byId=id=>L.findIndex(x=>x.id==id),newLot=()=>({id:'A'+pad(C.next++,3),ph:[],lock:null,tmp:''});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function snap(){undo.push(JSON.stringify({L,C}));if(undo.length>60)undo.shift()}
+$('#bUndo').onclick=()=>{if(!undo.length)return st('没有可撤销的操作');({L,C}=JSON.parse(undo.pop()));sync();render();st('已撤销')};
+function clean(){L=L.filter((x,i)=>i==0||x.ph.length)}
+
+/* numbering */
+function nums(){const out={},errs=[],used={};
+if(C.mode!='AUTO')lots().forEach(l=>{if(l.lock!=null)out[l.id]=l.lock});
+Object.values(out).forEach(v=>used[v]=(used[v]||0)+1);
+if(C.mode!='MANUAL'){let n=C.start;lots().forEach(l=>{if(out[l.id]==null){while(used[n])n+=C.inc;out[l.id]=n;used[n]=1;n+=C.inc}})}
+lots().forEach(l=>{const v=out[l.id];if(v==null)errs.push(`${l.id} 没有最终编号（MANUAL 模式需手动指定）`);else if(!Number.isInteger(v)||v<1)errs.push(`${l.id} 编号非法：${v}`)});
+const seen={};lots().forEach(l=>{const v=out[l.id];if(v!=null)(seen[v]=seen[v]||[]).push(l.id)});
+for(const v in seen)if(seen[v].length>1)errs.push(`最终编号 ${v} 重复：${seen[v].join('、')}`);
+return{out,errs}}
+const F0=()=>C.first==2?2:1;
+const fname=(n,j,p)=>`${n}-${j+F0()}.${p.ext}`;
+function sync(){$('#fs').value=String(F0());$('#md').value=C.mode;$('#ns').value=C.start;$('#ni').value=C.inc}
+$('#fs').onchange=e=>{snap();C.first=+e.target.value;render();st('图片序号已改为从 -'+C.first+' 开始，所有文件名已更新')};
+$('#md').onchange=e=>{snap();C.mode=e.target.value;render()};
+$('#ns').onchange=e=>{snap();C.start=Math.max(1,+e.target.value|0||1);render()};$('#ni').onchange=e=>{snap();C.inc=Math.max(1,+e.target.value|0||1);render()};
+
+/* import */
+async function mkThumb(f){let bm=null,w=0,h=0;try{bm=await createImageBitmap(f);w=bm.width;h=bm.height}catch(e){try{const u=URL.createObjectURL(f);bm=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=u});w=bm.naturalWidth;h=bm.naturalHeight;URL.revokeObjectURL(u)}catch(e2){bm=null}}
+const c=document.createElement('canvas'),g=c.getContext('2d');
+if(bm){const s=240/Math.max(w,h,1);c.width=Math.max(1,Math.round(w*s));c.height=Math.max(1,Math.round(h*s));g.drawImage(bm,0,0,c.width,c.height);bm.close&&bm.close()}
+else{c.width=240;c.height=180;g.fillStyle='#888';g.fillRect(0,0,240,180);g.fillStyle='#fff';g.font='16px sans-serif';g.fillText('无法生成缩略图',50,95)}
+return{w,h,fail:!bm,blob:await new Promise(r=>c.toBlob(r,'image/jpeg',.8))}}
+const DB=()=>new Promise((ok,no)=>{const r=indexedDB.open('apo2',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const put=(db,k,v)=>new Promise((ok,no)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok;t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)});
+const get=(db,k)=>new Promise((ok,no)=>{const r=db.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+$('#fi').onchange=async e=>{let fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+const so=$('#so').value;if(so=='name')fs.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));if(so=='mod')fs.sort((a,b)=>a.lastModified-b.lastModified);
+snap();cancel=false;$('#bCan').disabled=false;let db=null;try{db=await DB()}catch(e){}
+let ok=0,dup=0,bad=0,quota=false;const keys={};Object.values(P).forEach(p=>keys[p.key]=p);
+for(let i=0;i<fs.length;i++){if(cancel){st(`已取消：已导入 ${ok} 张，其余未处理（已导入的会保留）`);break}
+const f=fs[i],key=f.name+'|'+f.size+'|'+f.lastModified,ex=keys[key];
+if(ex){if(ex.noOrig&&!ex.file){ex.file=f}if(!L.some(l=>l.ph.includes(ex.id))){L[0].ph.push(ex.id);ok++}else dup++;continue}
+const m=/\.([A-Za-z0-9]+)$/.exec(f.name);const ext=m?m[1]:'jpg';
+if(!/^(jpe?g|png|heic|heif)$/i.test(ext)){bad++;continue}
+st(`导入中 ${i+1}/${fs.length}：${f.name}`);
+const t=await mkThumb(f),id='P'+pad(++C.ord,4);
+const p=P[id]={id,key,name:f.name,ext,size:f.size,w:t.w,h:t.h,mod:f.lastModified,ord:C.ord,fail:t.fail,thumb:t.blob,url:URL.createObjectURL(t.blob),file:f};
+keys[key]=p;L[0].ph.push(id);ok++;
+if(db){try{await put(db,'m:'+id,t.blob);await put(db,'f:'+id,f)}catch(err){p.noOrig=true;quota=true}}else p.noOrig=true;
+if(ok%10==0){render(true);await new Promise(r=>setTimeout(r))}}
+$('#bCan').disabled=true;render();
+st(`导入完成：新增 ${ok}，重复跳过 ${dup}，不支持 ${bad}。`+(quota?' ⚠ 浏览器存储空间不足，部分原图未能保存；刷新页面后需重新导入这些原图才能导出。':''))};
+$('#bCan').onclick=()=>{cancel=true};
+
+/* operations */
+function ordered(ids){return [...ids].sort((a,b)=>P[a].ord-P[b].ord)}
+function movePhotos(pids,dest,before,after){snap();const set=new Set(pids);const si=L.findIndex(l=>l.ph.some(p=>set.has(p)));
+L.forEach(l=>{if(l.ph.some(p=>set.has(p)))l.review=false;l.ph=l.ph.filter(p=>!set.has(p))});let d;
+if(dest=='NEW'){d=newLot();L.splice(si<=0?L.length:si+1,0,d)}else d=L[byId(dest)];
+let at=d.ph.length;if(before){at=d.ph.indexOf(before);if(at<0)at=d.ph.length;else if(after)at++}
+d.ph.splice(at,0,...pids);d.review=false;S.clear();clean();render()}
+function mergeLots(from,into){if(from==into||into=='POOL')return;snap();const a=L[byId(from)],b=L[byId(into)];b.ph.push(...a.ph);b.review=false;a.ph=[];clean();render();st(`已合并：${from} 并入 ${into}（${into} 的内部 ID 保留）`)}
+function moveLot(id,ref,after){snap();const i=byId(id);const[it]=L.splice(i,1);let j=byId(ref);if(after)j++;L.splice(j,0,it);render();st('整件已移动；内部 ID 不变，最终编号已按当前模式重算')}
+$('#bSel').onclick=()=>{if(!S.size)return st('请先点选照片');movePhotos(ordered(S),'NEW')};$('#bClr').onclick=()=>{S.clear();render()};
+/* fixed-size grouping removed */
+$('#list').addEventListener('click',e=>{if(jd)return;const ph=e.target.closest('.photo');
+if(ph&&!e.target.closest('button')){const id=ph.dataset.p;S.has(id)?S.delete(id):S.add(id);ph.classList.toggle('sel');return}
+const b=e.target.closest('button');if(!b)return;const id=b.closest('.card').dataset.i,i=byId(id);
+if(b.dataset.a=='up'){mergeLots(id,L[i-1].id==='POOL'?id:L[i-1].id)}
+if(b.dataset.a=='split'){snap();const l=L[i],rest=l.ph.slice(1);l.ph=[l.ph[0]];L.splice(i+1,0,...rest.map(p=>{const n=newLot();n.ph=[p];return n}));render()}
+if(b.dataset.a=='clr'){if(!clrArm){clrArm=true;clearTimeout(clrT);clrT=setTimeout(()=>{clrArm=false;render(true)},4000);render(true);return}clrArm=false;snap();const n=L[0].ph.length;L[0].ph=[];render();st(`已从项目中清空 ${n} 张未分组照片（你设备上的原文件不受影响；可撤销；重新导入同一文件会把它加回）`);return}
+if(b.dataset.a=='ok'){snap();L[i].review=false;render();return}
+if(b.dataset.a=='pool'){snap();L[0].ph.push(...L[i].ph);L[i].ph=[];clean();render();st('照片已移回未分组')}});
+$('#list').addEventListener('change',e=>{const f=e.target.dataset.f;if(!f)return;const l=L[byId(e.target.closest('.card').dataset.i)];snap();
+if(f=='tmp')l.tmp=e.target.value;else if(f=='name')l.name=e.target.value;else{const v=e.target.value.trim(),cur=nums().out,nv=v===''?null:(+v|0)||null;
+if(nv!=null){lots().forEach(x=>{if(x!==l&&x.lock==null&&cur[x.id]!=null)x.lock=cur[x.id]});C.mode='MIXED';sync();const hit=lots().find(x=>x!==l&&x.lock===nv);st(hit?`⚠ 编号 ${nv} 与 ${hit.id} 重复，导出前请修改其中一个`:`已把这件改为 Lot ${nv}，其余拍品的编号保持不变`)}
+l.lock=nv;}render()});
+
+function render(light){const el=$('#list'),n=nums();el.innerHTML='';
+L.forEach((l,i)=>{const pool=i==0,c=document.createElement('div');c.className='card'+(l.review?' unc':'');c.dataset.i=l.id;const fin=n.out[l.id];
+c.innerHTML=pool?`<div class="head"><span class="num">未分组照片</span><span class="iid">${l.ph.length} 张</span><span class="sp"></span>${l.ph.length?`<button data-a="clr">${clrArm?'再点一次确认清空 '+l.ph.length+' 张':'一键清空未分组'}</button>`:''}</div><div class="strip wrap"></div>`:
+`<div class="head"><span class="grip">⠿</span><span class="num">拍品 ${i}</span><input type="text" data-f="name" value="${esc(l.name||'')}" placeholder="名称（可选）" style="width:150px"><span class="fin">Lot</span><input type="number" data-f="lock" min="1" value="${fin??''}" title="点这里改 Lot 编号；清空＝恢复自动" style="width:84px;font-weight:700;color:var(--ac);border-color:var(--ac)"><span class="iid">ID ${l.id}</span><span class="iid">${l.ph.length} 张</span>${l.review?'<span class="iid" style="color:var(--wn);font-weight:700">待确认</span>':''}<span class="sp"></span>
+<span class="iid">临时</span><input type="text" data-f="tmp" value="${esc(l.tmp||'')}">
+${l.review?'<button data-a="ok" class="p">确认分组</button>':''}${i>1?'<button data-a="up">并入上一件</button>':''}${l.ph.length>1?'<button data-a="split">全部拆开</button>':''}<button data-a="pool">移回未分组</button></div>${l.ai?`<div class="iid" style="padding:0 12px 4px;color:${l.review?'var(--wn)':'var(--mu)'}">AI 建议（未核实）：可信度 ${esc(l.conf||'')} · ${esc(l.type||'')} · ${esc(l.note||'')}</div>`:''}<div class="strip"></div>`;
+const s=c.querySelector('.strip');l.ph.forEach((pid,j)=>{const p=P[pid],d=document.createElement('div');d.className='photo'+(S.has(pid)?' sel':'');d.dataset.p=pid;
+d.innerHTML=`<img draggable="false" loading="lazy" src="${p.url}">${pool||fin==null?'':`<b>${fin}-${j+F0()}</b>`}${p.noOrig&&!p.file?'<i>缺原图</i>':''}`;s.appendChild(d)});el.appendChild(c)});
+if(!light){clearTimeout(render.t);render.t=setTimeout(()=>save(true),800)}
+const lc=lots().length,pc=L[0].ph.length;$('#bZip').title=n.errs.join('\n');if(!light&&!/^导入|^已取消/.test($('#st').textContent))st(`${lc} 件拍品，未分组 ${pc} 张，共 ${L.reduce((a,l)=>a+l.ph.length,0)} 张`+(n.errs.length?`；编号问题 ${n.errs.length} 项`:''))}
+
+/* drag */
+const gh=$('#gh');
+$('#list').addEventListener('pointerdown',e=>{const ph=e.target.closest('.photo'),gp=e.target.closest('.grip');if(!ph&&!gp)return;
+const s={kind:ph?'photo':'item',id:ph?ph.dataset.p:gp.closest('.card').dataset.i,x:e.clientX,y:e.clientY,px:e.clientX,py:e.clientY,on:false,el:ph||gp.closest('.card')};drag=s;
+const go=()=>{s.on=true;gh.hidden=false;if(s.kind=='photo'){s.ids=S.has(s.id)?ordered(S):[s.id];gh.className='';gh.innerHTML=`<img src="${P[s.id].url}" style="width:116px;height:87px;object-fit:cover;display:block">`+(s.ids.length>1?`<b style="position:absolute;right:4px;top:4px;background:var(--ac);color:#fff;padding:2px 8px;border-radius:9px">${s.ids.length}</b>`:'');s.ids.forEach(i=>document.querySelector(`[data-p="${i}"]`)?.classList.add('src'))}
+else{gh.className='item';gh.textContent='拍品 '+byId(s.id)}mv(s.x,s.y);loop()};
+if(gp)go();else s.t=setTimeout(go,250)});
+function mv(x,y){gh.style.left=x+'px';gh.style.top=y+'px'}
+function tgt(x,y){gh.hidden=true;const el=document.elementFromPoint(x,y);gh.hidden=false;if(!el)return null;
+const ph=el.closest('.photo'),sp=el.closest('.strip'),cd=el.closest('.card'),nz=el.closest('#nz');
+if(drag.kind=='photo'){if(ph&&!drag.ids.includes(ph.dataset.p)){const r=ph.getBoundingClientRect();return{t:'ph',el:ph,pid:ph.dataset.p,after:x>r.left+r.width/2,iid:ph.closest('.card').dataset.i}}
+if(ph)return null;if(sp)return{t:'st',el:sp,iid:sp.closest('.card').dataset.i};if(cd)return{t:'st',el:cd.querySelector('.strip'),iid:cd.dataset.i};if(nz)return{t:'nz',el:nz}}
+else{if(cd&&cd.dataset.i!='POOL'&&cd.dataset.i!=drag.id){if(sp)return{t:'mg',el:cd,iid:cd.dataset.i};const r=cd.getBoundingClientRect();return{t:'ro',el:cd,iid:cd.dataset.i,after:y>r.top+r.height/2}}}return null}
+const clr=()=>document.querySelectorAll('.dt').forEach(x=>x.classList.remove('dt'));
+document.addEventListener('pointermove',e=>{if(!drag)return;drag.px=e.clientX;drag.py=e.clientY;
+if(!drag.on){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>10){clearTimeout(drag.t);drag=null}return}
+mv(e.clientX,e.clientY);clr();const t=tgt(e.clientX,e.clientY);drag.tg=t;if(t)t.el.classList.add('dt')});
+document.addEventListener('touchmove',e=>{if(drag&&drag.on)e.preventDefault()},{passive:false});
+function loop(){if(!drag||!drag.on)return;const y=drag.py;if(y<130)scrollBy(0,-14);else if(y>innerHeight-90)scrollBy(0,14);requestAnimationFrame(loop)}
+function end(ok){if(!drag)return;clearTimeout(drag.t);const s=drag;drag=null;gh.hidden=true;clr();if(!s.on)return;jd=true;setTimeout(()=>jd=false,60);
+document.querySelectorAll('.src').forEach(x=>x.classList.remove('src'));const t=ok&&s.tg;if(!t)return;
+if(s.kind=='photo'){if(t.t=='ph')movePhotos(s.ids,t.iid,t.pid,t.after);else if(t.t=='st')movePhotos(s.ids,t.iid);else if(t.t=='nz')movePhotos(s.ids,'NEW')}
+else{if(t.t=='mg')mergeLots(s.id,t.iid);else if(t.t=='ro')moveLot(s.id,t.iid,t.after)}}
+document.addEventListener('pointerup',()=>end(true));document.addEventListener('pointercancel',()=>end(false));
+
+/* AI grouping: cloud, via the page's Claude sample capability */
+let aiRun=false,aiAb=null;const log=m=>{$('#aiLog').textContent=m},RK={'高':2,'中':1,'低':0};
+$('#bAI').onclick=()=>{$('#aiD').open=true;$('#aiD').scrollIntoView({behavior:'smooth'})};
+$('#aiStop').onclick=()=>aiAb&&aiAb.abort();
+$('#aiGo').onclick=async()=>{if(aiRun)return;if(!L[0].ph.length)return log('没有未分组照片可供分析。');let sm=null,lim=null;
+try{if(window.claude)sm=await claude.use('sample');if(sm)lim=await sm.limits()}catch(e){}
+if(!sm)return log('当前环境没有 AI 调用能力（需要在 claude.ai 里打开本页）。手动分组仍可使用。');
+if(!lim||!lim.images)return log('此视图不能向 Claude 发送图片，无法做 AI 分组。');
+const BS=Math.max(2,Math.min(12,(lim.images.maxCount||12)-1)),ids=ordered(L[0].ph),nb=Math.ceil(ids.length/BS);
+aiRun=true;aiAb=new AbortController();$('#aiStop').disabled=false;$('#aiGo').disabled=true;snap();let prev=null,made=0,done=0;
+try{for(let b=0;b<ids.length;b+=BS){if(aiAb.signal.aborted)break;const chunk=ids.slice(b,b+BS),ctx=prev?prev.ph[prev.ph.length-1]:null,off=ctx?1:0;
+log(`分析第 ${b/BS+1}/${nb} 批（${chunk.length} 张）…已完成 ${done} 张，生成 ${made} 件拍品`);
+const blobs=(ctx?[P[ctx].thumb]:[]).concat(chunk.map(i=>P[i].thumb));
+const pr=`你是拍卖行照片整理助手。下面共 ${blobs.length} 张图片，按文件顺序排列，是拍卖品照片（多为中国古董瓷器、玉器、佛像雕塑等）。请判断哪些照片是同一件实物的不同角度（正面、背面、侧面、顶部、底部、细节），把它们分成组，每组就是一件拍品。\n规则：1) 同一件物品换角度后外观可能差别很大，仍属同组；2) 仅仅颜色、款式相似的不同物品不可合并，要对比纹饰细节、缺陷、磨损、器形和背景；3) 相邻顺序只是弱线索，不是证据；4) 没把握就把 confidence 设为“低”，并在 note 里写出不确定点，不要编造；5) 每张待分组图片必须出现且只出现一次。\n图片编号为 1 到 ${blobs.length}，按传入顺序。${ctx?'图片 1 是上一批最后一张（已属于上一件拍品，仅作上下文，不要放进 items）；图片 2 起才是本批待分组图片。':'所有图片都是待分组图片。'}\n只输出 JSON：{"groups":[{"items":[图片编号],"continues_previous":false,"type":"盘|碗|瓶|其他器皿|雕塑|玉器|未知","confidence":"高|中|低","note":"一句话理由"}]}。continues_previous 仅当该组与图片 1 是同一件实物时才为 true。`;
+const r=await sm.json(pr,{images:blobs,signal:aiAb.signal,modelTier:'default',cache:false});
+const seen=new Set(),gs=[];(r.groups||[]).forEach(g=>{const its=(Array.isArray(g.items)?g.items:[]).map(n=>chunk[n-1-off]).filter(x=>x&&!seen.has(x));its.forEach(x=>seen.add(x));if(its.length)gs.push({its,cont:g.continues_previous===true&&!!ctx&&!gs.length,type:String(g.type||'未知'),conf:RK[g.confidence]==null?'低':g.confidence,note:String(g.note||'')})});
+chunk.filter(x=>!seen.has(x)).forEach(x=>gs.push({its:[x],cont:false,type:'未知',conf:'低',note:'模型未归类，请人工处理'}));
+for(const g of gs){const its=ordered(g.its);if(g.cont&&prev){prev.ph.push(...its);if(RK[g.conf]<RK[prev.conf])prev.conf=g.conf;prev.review=prev.review||g.conf!=='高';prev.note+=' ｜'+g.note}
+else{const l=newLot();l.ph=its;l.ai=true;l.type=g.type;l.conf=g.conf;l.note=g.note;l.review=g.conf!=='高';L.push(l);made++}}
+const cs=new Set(chunk);L[0].ph=L[0].ph.filter(x=>!cs.has(x));done+=chunk.length;prev=L.find((l,i)=>i>0&&l.ph.includes(chunk[chunk.length-1]));render(true)}
+log(aiAb.signal.aborted?`已停止：已分析 ${done} 张，生成 ${made} 件拍品，其余仍在未分组。`:`完成：分析 ${done} 张，生成 ${made} 件拍品。橙色“待确认”的请逐件检查（可用撤销回到分析前）。`)}
+catch(e){const m={cancelled:'已停止',not_granted:'你没有授权发送图片，未做任何分析',rate_limited:'请求过于频繁，请稍后再试',invalid_json:'模型返回的格式无法解析，本批未应用，请重试'}[e.code];log(`${m||'AI 分析失败：'+(e.message||e.code)}。已完成的批次已保留（${done} 张），其余仍在未分组。`)}
+finally{aiRun=false;$('#aiStop').disabled=true;$('#aiGo').disabled=false;render()}};
+let pendO=null;
+$('#bPo').onclick=()=>{const a=($('#po').value.match(/\d+/g)||[]).map(Number),ls=lots();pendO=null;$('#bPoAp').disabled=true;const dup=a.filter((v,i)=>a.indexOf(v)!=i);let m=`拍品 ${ls.length} 件，粘贴的编号 ${a.length} 个。\n`;
+if(a.some(v=>v<1))m+='存在 0 或非法编号\n';if(dup.length)m+='编号重复：'+[...new Set(dup)].slice(0,10).join('、')+'\n';
+if(a.length!=ls.length)m+='数量不一致，已阻止应用：请核对编号数量或拍品数量。\n';
+const ok=!dup.length&&a.length==ls.length&&a.every(v=>v>=1);m+=ls.slice(0,40).map((l,i)=>`拍品 ${i+1}（${l.id}）→ ${a[i]??'—'}`).join('\n');
+$('#pp').textContent=m;if(ok){pendO=a;$('#bPoAp').disabled=false}};
+$('#bPoAp').onclick=()=>{if(!pendO)return;snap();lots().forEach((l,i)=>l.lock=pendO[i]);C.mode='MIXED';sync();pendO=null;$('#bPoAp').disabled=true;render();st('已按当前拍品顺序一键排号（已锁定；可撤销）')};
+$('#pdfi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const V='3.11.174',B='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/'+V+'/';
+try{$('#pp').textContent='正在读取 PDF…';
+if(!window.pdfjsLib){await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src=B+'pdf.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('无法加载 PDF 读取组件（网络或环境限制）'));document.head.appendChild(sc)});
+const w=await (await fetch(B+'pdf.worker.min.js')).text();pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([w],{type:'text/javascript'}))}
+const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise,out=[];
+for(let n=1;n<=doc.numPages;n++){const tc=await (await doc.getPage(n)).getTextContent();const its=tc.items.map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5]})).filter(i=>i.s);
+const h=its.find(i=>i.s=='Lot');const ints=its.filter(i=>/^\d{1,5}$/.test(i.s));if(!ints.length)continue;const hx=h?h.x:Math.min(...ints.map(i=>i.x));
+ints.filter(i=>Math.abs(i.x-hx)<=35&&(!h||i.y<h.y)).sort((a,b)=>b.y-a.y).forEach(i=>out.push(+i.s))}
+if(!out.length){$('#pp').textContent='没有读到编号列（可能是扫描图片 PDF，或版式不同）。请手动粘贴编号。';return}
+$('#po').value=out.join('\n');$('#bPo').click();$('#pp').textContent=`从 ${doc.numPages} 页 PDF 读到 ${out.length} 个编号（${out[0]} … ${out[out.length-1]}）。请核对下方预览。\n`+$('#pp').textContent}
+catch(err){$('#pp').textContent='读取 PDF 失败：'+(err.message||err)+'。可手动粘贴编号。'}};
+/* CSV lot-number import */
+$('#ci').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const rows=(await f.text()).replace(/^\ufeff/,'').split(/\r?\n/).filter(x=>x.trim()).map(r=>r.split(',').map(x=>x.trim().replace(/^"|"$/g,'')));
+const hd=rows.shift()||[],ii=hd.indexOf('internal_id'),fi=hd.indexOf('final_lot');if(ii<0||fi<0){pend=null;$('#bAp').disabled=true;return $('#cp').innerHTML='<span class="er">表头必须包含 internal_id 和 final_lot</span>'}
+const ids=new Set(lots().map(l=>l.id)),ok=[],msg=[],seen={},nm={};
+rows.forEach((r,k)=>{const id=r[ii],v=+r[fi];const ln=k+2;if(!ids.has(id)){msg.push(`<span class="er">第 ${ln} 行：内部 ID ${esc(id)} 不存在</span>`);return}
+if(!Number.isInteger(v)||v<1){msg.push(`<span class="er">第 ${ln} 行：${esc(id)} 的 final_lot 非法（${esc(r[fi])}）</span>`);return}
+if(nm[id]){msg.push(`<span class="er">第 ${ln} 行：${id} 重复出现</span>`);return}nm[id]=1;if(seen[v]){msg.push(`<span class="er">第 ${ln} 行：编号 ${v} 与 ${seen[v]} 重复</span>`);return}seen[v]=id;ok.push([id,v])});
+const miss=[...ids].filter(i=>!nm[i]);const cur={};lots().forEach(l=>{if(l.lock!=null&&!nm[l.id])cur[l.lock]=l.id});ok.forEach(([id,v])=>{if(cur[v])msg.push(`<span class="er">编号 ${v} 与现有锁定的 ${cur[v]} 冲突</span>`)});
+const bad=msg.some(m=>m.includes('冲突')||m.includes('重复'));
+$('#cp').innerHTML=`可应用 ${ok.length} 条；未包含的拍品 ${miss.length} 个${miss.length?'：'+miss.slice(0,20).join('、'):''}\n`+msg.join('\n')+'\n'+ok.slice(0,40).map(([i,v])=>`${i} → ${v}`).join('\n');
+pend=bad?null:ok;$('#bAp').disabled=!pend||!ok.length;if(bad)$('#cp').innerHTML+='\n<span class="er">存在重复/冲突，已禁止应用，请修正 CSV</span>'};
+$('#bAp').onclick=()=>{if(!pend)return;snap();pend.forEach(([id,v])=>L[byId(id)].lock=v);if(C.mode=='AUTO'){C.mode='MIXED';sync()}pend=null;$('#bAp').disabled=true;$('#cp').textContent='';render();st('已应用 CSV 编号（已锁定）')};
+
+/* export */
+const CT=new Uint32Array(256).map((_,n)=>{let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;return c>>>0});
+const crc=u=>{let c=~0;for(let i=0;i<u.length;i++)c=CT[(c^u[i])&255]^(c>>>8);return(~c)>>>0};
+function zipStore(files){const E=new TextEncoder(),parts=[],cen=[];let off=0,cs=0;const d=new Date(),dt=((d.getFullYear()-1980)<<9|(d.getMonth()+1)<<5|d.getDate()),tm=(d.getHours()<<11|d.getMinutes()<<5|d.getSeconds()>>1);
+for(const f of files){const nm=E.encode(f.name),cr=crc(f.data),h=new DataView(new ArrayBuffer(30));
+h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);h.setUint32(14,cr,true);h.setUint32(18,f.data.length,true);h.setUint32(22,f.data.length,true);h.setUint16(26,nm.length,true);parts.push(h.buffer,nm,f.data);
+const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);c.setUint32(16,cr,true);c.setUint32(20,f.data.length,true);c.setUint32(24,f.data.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);cen.push(c.buffer,nm);cs+=46+nm.length;off+=30+nm.length+f.data.length}
+const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);return new Blob([...parts,...cen,e.buffer],{type:'application/zip'})}
+function plan(){const n=nums().out,r=[];let fp=0;lots().forEach(l=>l.ph.forEach((pid,j)=>{const p=P[pid];r.push({pid,p,l,n:n[l.id],j,nn:fname(n[l.id],j,p),dir:`Lot_${n[l.id]}`})}));return r}
+function check(){const e=[...nums().errs];const rv=lots().filter(l=>l.review).length;if(rv)e.push(`${rv} 件 AI 分组待人工确认`);if(L[0].ph.length)e.push(`${L[0].ph.length} 张照片尚未分组（未分配 Lot）`);
+const miss=Object.values(P).filter(p=>p.noOrig&&!p.file&&lots().some(l=>l.ph.includes(p.id)));if(miss.length)e.push(`${miss.length} 张照片的原图未保存，请重新导入对应原文件：${miss.slice(0,5).map(p=>p.name).join('、')}…`);
+if(!e.length){const seen={};plan().forEach(x=>{const k=x.dir+'/'+x.nn;if(seen[k])e.push('重复导出文件名 '+k);seen[k]=1;if(/[\\/:*?"<>|]/.test(x.nn))e.push('非法文件名字符 '+x.nn)});
+const tot=plan().length,inL=lots().reduce((a,l)=>a+l.ph.length,0);if(tot!=inL)e.push('导出计划与拍品内照片数不一致')}
+return e}
+const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+function csv(){const n=nums().out;const h='Internal ID,Temporary Lot,Final Lot,Original Filename,New Filename,Original Position,Final Position,Object Type,Viewpoint Label,File Modified,Size Bytes,Lot Name';
+return '\ufeff'+[h].concat(plan().map(x=>[x.l.id,x.l.tmp||'',x.n??'',x.p.name,x.n==null?'':x.nn,x.p.ord,x.j+F0(),x.l.type?x.l.type+'（AI建议）':'Unknown（未识别）','Unknown（未识别）',new Date(x.p.mod).toISOString(),x.p.size,x.l.name||''].map(q).join(','))).join('\r\n')}
+async function save2(name,blob){let dl=null;try{if(window.claude)dl=await claude.use('downloads')}catch(e){}
+if(dl){try{await dl.save({filename:name,data:blob});return true}catch(e){st('保存未完成（'+(e.code||e.message)+'）');return false}}
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();return true}
+$('#bCsv').onclick=async()=>{const bad=nums().errs;if(bad.length)st('提示：编号尚有问题，对照表中的部分编号可能为空');await save2('filename_mapping.csv',new Blob([csv()],{type:'text/csv'}))};
+async function orig(p){if(p.file)return new Uint8Array(await p.file.arrayBuffer());const db=await DB(),f=await get(db,'f:'+p.id);return new Uint8Array(await f.arrayBuffer())}
+$('#bZip').onclick=async()=>{const e=check();$('#chk').innerHTML=e.length?e.map(x=>'<span class="er">✗ '+esc(x)+'</span>').join('\n'):'✓ 检查通过';
+if(e.length){document.querySelector('#chk').closest('details').open=true;return st(`导出已阻止：${e.length} 个问题，见“导出检查”`)}
+const pl=plan(),LIM=250*1048576,parts=[];let cur=[],sz=0;
+lots().forEach(l=>{const xs=pl.filter(x=>x.l.id==l.id),s=xs.reduce((a,x)=>a+x.p.size,0);if(cur.length&&sz+s>LIM){parts.push(cur);cur=[];sz=0}cur.push(...xs);sz+=s});if(cur.length)parts.push(cur);
+if(parts.length>1)st(`总量较大，将分 ${parts.length} 个 ZIP 依次导出（每个约 ≤250MB），每个都会请求保存确认。`);
+let done=0;for(let k=0;k<parts.length;k++){const files=[];for(const x of parts[k]){st(`打包第 ${k+1}/${parts.length} 个：${x.dir}/${x.nn}`);files.push({name:x.dir+'/'+x.nn,data:await orig(x.p)})}
+files.push({name:'filename_mapping.csv',data:new TextEncoder().encode(csv())});
+files.push({name:'manifest.txt',data:new TextEncoder().encode(`part ${k+1}/${parts.length}\nphotos ${parts[k].length}\n`)});
+const ok=await save2(parts.length>1?`Auction_Export_part${k+1}of${parts.length}.zip`:'Auction_Export.zip',zipStore(files));if(!ok)return;done+=parts[k].length}
+st(`已提交导出：${done}/${pl.length} 张照片，${lots().length} 个 Lot 文件夹。核对：计划数与打包数一致。`)};
+
+/* persistence */
+async function save(quiet){try{const db=await DB(),meta={};for(const id in P){const{thumb,url,file,...m}=P[id];meta[id]=m}
+await put(db,'state',{L,C,meta,at:Date.now()});st(quiet?'已自动保存 · '+new Date().toLocaleTimeString():'已保存到本机浏览器')}catch(e){st('保存失败：'+e.message)}}
+$('#bSave').onclick=()=>save(false);
+$('#bBak').onclick=()=>{const meta={};for(const id in P){const{thumb,url,file,...m}=P[id];meta[id]=m}save2('apo-backup-metadata.json',new Blob([JSON.stringify({L,C,meta},null,1)],{type:'application/json'}));st('备份只含元数据，不含照片；恢复时需重新关联原始照片（备份恢复功能尚未实现）')};
+async function load(){try{const db=await DB(),s=await get(db,'state');if(!s)return;L=s.L;C=s.C;P={};let miss=0;
+for(const id in s.meta){const m=s.meta[id],t=await get(db,'m:'+id);const hasF=await new Promise(r=>{const q=db.transaction('kv').objectStore('kv').count('f:'+id);q.onsuccess=()=>r(q.result>0);q.onerror=()=>r(false)});
+P[id]={...m,thumb:t,url:t?URL.createObjectURL(t):'',noOrig:!hasF};if(!hasF)miss++}
+sync();render(true);st(`已恢复上次项目（${new Date(s.at).toLocaleString()}）`+(miss?`；${miss} 张原图未保存，需重新导入`:''))}catch(e){st('恢复失败：'+e.message)}}
+sync();render(true);load();
+</script></body></html>
